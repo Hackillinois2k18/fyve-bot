@@ -19,6 +19,20 @@ server.post('/api/messages', connector.listen());
 
 var inMemoryStorage = new builder.MemoryBotStorage();
 
+
+function createHeroCard(session, url, dispUrl, sumSent, titl) {
+    sumText = sumSent.join();
+    return new builder.HeroCard(session)
+        .title(titl)
+        .text(sumText)
+        .images([
+            builder.CardImage.create(session, dispUrl)
+        ])
+        .buttons([
+            builder.CardAction.openUrl(session, url, 'Go to source')
+        ]);
+}
+
 var bot = new builder.UniversalBot(connector, [
     function (session) {
         session.send("Hi, I'm FyveBot. I can find and summarize data about any topic.");
@@ -27,61 +41,69 @@ var bot = new builder.UniversalBot(connector, [
     function (session, results) {
         session.dialogData.topic = results.response;
         session.send("Awesome, Ill look up information about %s", session.dialogData.topic);
-        builder.Prompts.choice(session, "Would you like me to search text or video sources?", "text|video", {listStyle: 2});
+        builder.Prompts.choice(session, "Would you like me to search article or video sources?", "article|video", {listStyle: 2});
     },
     function (session, results) {
         session.dialogData.format = results.response.entity;
-        session.send("Great, Ill look up %s about %s", session.dialogData.format, session.dialogData.topic);
+        session.send("Great, Ill look up %ss about %s!", session.dialogData.format, session.dialogData.topic);
         session.sendTyping();
 
         var format = results.response.entity;
-        var topic = session.dialogData.topic
-        if (format === "text") {
-            var url = 'http://127.0.0.1:5000/fyve-bot/articles/' + topic;
-            fetch(url)
-                .then(response => {
-                    response.json().then(json => {
-                        console.log(
-                            `url: ${json[0].url}`
-                        );
-                    });
-                })
-            .catch(error => {
-                console.log(error);
-            });
+        var topic = session.dialogData.topic;
 
-            // fetch('http://127.0.0.1:5000/fyve-bot/articles/', { 
-            //     method: 'GET',
-            //     body:    session.dialogData.topic,
-            //     headers: { 'Content-Type': 'application/json' },
-            // })
-            //     .then(res => res.json())
-            //     .then(json => console.log(json));
-
-        } else {
-            var url = 'http://127.0.0.1:5000/fyve-bot/videos/' + topic;
-            fetch(url)
-                .then(response => {
-                    response.json().then(json => {
-                        console.log(
-                            `url: ${json[0].url}`
-                        );
-                    });
-                })
-            .catch(error => {
-                console.log(error);
-            });
-
-            // fetch('http://127.0.0.1:5000/fyve-bot/videos/', { 
-            //     method: 'GET',
-            //     body:    session.dialogData.topic,
-            //     headers: { 'Content-Type': 'application/json' },
-            // })
-            //     .then(res => res.json())
-            //     .then(json => console.log(json));
-
+        var summaries = [];
+        var url;
+        if (format === "article") {
+            url = 'http://127.0.0.1:5000/fyve-bot/articles/' + topic;
+        } else if (format === "video") {
+            url = 'http://127.0.0.1:5000/fyve-bot/videos/' + topic;
         }
-        session.send("I hope that was useful. Bye!");
-        session.endDialog();
+
+        fetch(url, {method: 'GET'})
+            .then(function(response){
+                return response.json();
+            })
+            .then(function(json){
+                session.sendTyping();
+                for (var i = 0; i < JSON.parse(json).length; i++) {
+                    articleVals = [];
+                    articleVals.push(JSON.parse(json)[i].url);
+                    articleVals.push(JSON.parse(json)[i].displayUrl);
+                    articleVals.push(JSON.parse(json)[i].sumSentences);
+                    articleVals.push(JSON.parse(json)[i].title);
+                    summaries.push(articleVals)
+                }
+            }).then(function(res){
+                session.sendTyping();
+                var cards = [];
+                for (var i = 0; i < summaries.length; i++) {
+                    var card = createHeroCard(session, summaries[i][0], summaries[i][1], summaries[i][2], summaries[i][3]);
+                    cards.push(card);
+                }
+
+                var reply = new builder.Message(session).attachmentLayout(builder.AttachmentLayout.carousel).attachments(cards);
+                session.send(reply);
+
+            // var msg = new builder.Message(session).addAttachment(card);
+            // session.send(msg);
+                console.log("Ive got all of the values!!!!");
+            }).then(function(nextRes){
+                session.send("I hope that was useful. Bye!");
+                session.endDialog();
+            });
+
+
+
+
+                // .then(res => res.json())
+                // // .then(json => console.log(JSON.parse(json)[0].url));
+                // .then(json => cardURL = JSON.parse(json)[0].url)
+                // .then(json => session.send("The url is %s", cardURL));
+                // // .then(json => session.send("The url is %s", JSON.p   arse(json)[0].url));
+
+        // cardURL = jsonRES[0].url;
+        // session.send("The url is %s", cardURL);
+        // session.send("I hope that was useful. Bye!");
+        // session.endDialog();
     }
 ]).set('storage', inMemoryStorage);
