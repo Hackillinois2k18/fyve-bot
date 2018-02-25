@@ -54,9 +54,9 @@ var bot = new builder.UniversalBot(connector, [
         var summaries = [];
         var url;
         if (format === "article") {
-            url = 'http://127.0.0.1:5000/fyve-bot/articles/' + topic;
+            url = 'http://52.224.52.97:5000/fyve-bot/articles/' + topic;
         } else if (format === "video") {
-            url = 'http://127.0.0.1:5000/fyve-bot/videos/' + topic;
+            url = 'http://52.224.52.97:5000/fyve-bot/videos/' + topic;
         }
 
         fetch(url, {method: 'GET'})
