@@ -1,5 +1,6 @@
 var restify = require('restify');
 var builder = require('botbuilder');
+const fetch = require('node-fetch');
 
 // Setup restify server
 var server = restify.createServer();
@@ -31,8 +32,55 @@ var bot = new builder.UniversalBot(connector, [
     function (session, results) {
         session.dialogData.format = results.response.entity;
         session.send("Great, Ill look up %s about %s", session.dialogData.format, session.dialogData.topic);
-        // TODO: GET STUFF FROM SERVER
         session.sendTyping();
+
+        var format = results.response.entity;
+        var topic = session.dialogData.topic
+        if (format === "text") {
+            var url = 'http://127.0.0.1:5000/fyve-bot/articles/' + topic;
+            fetch(url)
+                .then(response => {
+                    response.json().then(json => {
+                        console.log(
+                            `url: ${json[0].url}`
+                        );
+                    });
+                })
+            .catch(error => {
+                console.log(error);
+            });
+
+            // fetch('http://127.0.0.1:5000/fyve-bot/articles/', { 
+            //     method: 'GET',
+            //     body:    session.dialogData.topic,
+            //     headers: { 'Content-Type': 'application/json' },
+            // })
+            //     .then(res => res.json())
+            //     .then(json => console.log(json));
+
+        } else {
+            var url = 'http://127.0.0.1:5000/fyve-bot/videos/' + topic;
+            fetch(url)
+                .then(response => {
+                    response.json().then(json => {
+                        console.log(
+                            `url: ${json[0].url}`
+                        );
+                    });
+                })
+            .catch(error => {
+                console.log(error);
+            });
+
+            // fetch('http://127.0.0.1:5000/fyve-bot/videos/', { 
+            //     method: 'GET',
+            //     body:    session.dialogData.topic,
+            //     headers: { 'Content-Type': 'application/json' },
+            // })
+            //     .then(res => res.json())
+            //     .then(json => console.log(json));
+
+        }
         session.send("I hope that was useful. Bye!");
         session.endDialog();
     }
