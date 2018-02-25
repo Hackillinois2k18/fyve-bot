@@ -84,26 +84,9 @@ var bot = new builder.UniversalBot(connector, [
                 var reply = new builder.Message(session).attachmentLayout(builder.AttachmentLayout.carousel).attachments(cards);
                 session.send(reply);
 
-            // var msg = new builder.Message(session).addAttachment(card);
-            // session.send(msg);
-                console.log("Ive got all of the values!!!!");
             }).then(function(nextRes){
-                session.send("I hope that was useful. Bye!");
+                session.send("I hope you learned something useful! Talk to you later!");
                 session.endDialog();
             });
-
-
-
-
-                // .then(res => res.json())
-                // // .then(json => console.log(JSON.parse(json)[0].url));
-                // .then(json => cardURL = JSON.parse(json)[0].url)
-                // .then(json => session.send("The url is %s", cardURL));
-                // // .then(json => session.send("The url is %s", JSON.p   arse(json)[0].url));
-
-        // cardURL = jsonRES[0].url;
-        // session.send("The url is %s", cardURL);
-        // session.send("I hope that was useful. Bye!");
-        // session.endDialog();
     }
 ]).set('storage', inMemoryStorage);
