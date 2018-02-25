@@ -1,57 +1,41 @@
-/*-----------------------------------------------------------------------------
-A simple echo bot for the Microsoft Bot Framework. 
------------------------------------------------------------------------------*/
-
 var restify = require('restify');
 var builder = require('botbuilder');
-var botbuilder_azure = require("botbuilder-azure");
 
-// Setup Restify Server
+// Setup restify server
 var server = restify.createServer();
 server.listen(process.env.port || process.env.PORT || 3978, function () {
-   console.log('%s listening to %s', server.name, server.url); 
+    console.log("%s listening to %s", server.name, server.url);
 });
-  
-// Create chat connector for communicating with the Bot Framework Service
+
+// Chat connector for communication with Bot Framework Service
 var connector = new builder.ChatConnector({
     appId: process.env.MicrosoftAppId,
-    appPassword: process.env.MicrosoftAppPassword,
-    openIdMetadata: process.env.BotOpenIdMetadata 
+    appPassword: process.env.MicrosoftAppPassword
 });
 
-// Listen for messages from users 
+// Listen for messages from users
 server.post('/api/messages', connector.listen());
 
-/*----------------------------------------------------------------------------------------
-* Bot Storage: This is a great spot to register the private state storage for your bot. 
-* We provide adapters for Azure Table, CosmosDb, SQL Azure, or you can implement your own!
-* For samples and documentation, see: https://github.com/Microsoft/BotBuilder-Azure
-* ---------------------------------------------------------------------------------------- */
+var inMemoryStorage = new builder.MemoryBotStorage();
 
-var tableName = 'botdata';
-var azureTableClient = new botbuilder_azure.AzureTableClient(tableName, process.env['AzureWebJobsStorage']);
-var tableStorage = new botbuilder_azure.AzureBotStorage({ gzipData: false }, azureTableClient);
-
-// Create your bot with a function to receive messages from the user
-var bot = new builder.UniversalBot(connector);
-bot.set('storage', tableStorage);
-
-bot.dialog('/', [
+var bot = new builder.UniversalBot(connector, [
     function (session) {
-        builder.Prompts.text(session, "Hello... What's your name?");
+        session.send("Yo I'm Fyve Bot.");
+        builder.Prompts.text(session, "What would you like to learn about?");
     },
     function (session, results) {
-        session.userData.name = results.response;
-        builder.Prompts.number(session, "Hi " + results.response + ", How many years have you been coding?"); 
+        session.dialogData.topic = results.response;
+        session.send("K Ill teach u about %s", session.dialogData.topic);
+        session.send("Here's your learning bruh");
+        session.sendTyping();
+        builder.Prompts.choice(session, "Did you like the content?", "yes|no", {listStyle: 2});
     },
     function (session, results) {
-        session.userData.coding = results.response;
-        builder.Prompts.choice(session, "What language do you code Node using?", ["JavaScript", "CoffeeScript", "TypeScript"]);
-    },
-    function (session, results) {
-        session.userData.language = results.response.entity;
-        session.send("Got it... " + session.userData.name + 
-                    " you've been programming for " + session.userData.coding + 
-                    " years and use " + session.userData.language + ".");
+        if (results.response.entity === "no") {
+            session.send("Too bad");
+        } else {
+            session.send("K bye");
+        }
+        session.endDialog();
     }
-]);
+]).set('storage', inMemoryStorage);
